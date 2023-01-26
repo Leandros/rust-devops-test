@@ -39,16 +39,35 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
                 .action(ArgAction::SetTrue),
         )
         .subcommand_required(true)
-        .subcommand(Command::new("deploy"))
+        .subcommand(
+            Command::new("deploy")
+                .arg(
+                    Arg::new("to")
+                        .long("to")
+                        .help("Which environment to deploy to")
+                        .value_parser(["dev", "staging", "pord"])
+                        .required(true)
+                        .action(ArgAction::Set),
+                )
+                .arg(
+                    Arg::new("project")
+                        .help("The project to deploy")
+                        .required(true)
+                        .value_parser(["frontend", "backend"])
+                        .action(ArgAction::Set),
+                ),
+        )
         .get_matches();
 
     init(matches.get_flag("verbose"))?;
 
     match matches.subcommand() {
-        Some(("deploy", _)) => {
-            deploy().await?;
+        Some(("deploy", matches)) => {
+            let to = matches.get_one::<String>("to").expect("required");
+            let project = matches.get_one::<String>("project").expect("required");
+            deploy(to, project).await?;
         }
-        _ => unreachable!("clap should ensure we don't get here"),
+        _ => unreachable!("did you forget to add the subcommand to the match?"),
     }
 
     // Doxy.me Senior DevOps Coding Challenge:
